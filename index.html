@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>邻里话养生 - 养生知识库</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f0;
+      min-height: 100vh;
+    }
+    
+    /* 通用样式 */
+    .page { display: none; min-height: 100vh; }
+    .page.active { display: block; }
+    
+    /* 顶栏 */
+    .header {
+      background: linear-gradient(135deg, #4CAF50, #81C784);
+      color: white;
+      padding: 16px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(76,175,80,0.3);
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header p { font-size: 12px; opacity: 0.9; margin-top: 2px; }
+    
+    /* 积分显示 */
+    .points-bar {
+      background: white;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .points-bar .points-num {
+      color: #FF8C00;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .points-bar .points-label { color: #888; font-size: 13px; }
+    
+    /* 搜索框 */
+    .search-box {
+      padding: 16px;
+      background: white;
+      border-bottom: 1px solid #e8e8e8;
+    }
+    .search-input-wrap {
+      display: flex;
+      gap: 8px;
+      background: #f5f5f0;
+      border-radius: 24px;
+      padding: 8px 16px;
+      align-items: center;
+    }
+    .search-input-wrap input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 15px;
+      outline: none;
+      color: #333;
+    }
+    .search-input-wrap input::placeholder { color: #aaa; }
+    .btn-search {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 16px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    
+    /* 热门标签 */
+    .hot-tags {
+      padding: 12px 16px 8px;
+    }
+    .hot-tags h3 { color: #888; font-size: 13px; margin-bottom: 8px; }
+    .home-tabs {
+      display: flex;
+      gap: 8px;
+      padding: 4px 16px 8px;
+    }
+    .home-tabs .tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: #888;
+      background: white;
+      border-radius: 12px;
+      cursor: pointer;
+      border: 1px solid #eee;
+    }
+    .home-tabs .tab.active {
+      color: #4CAF50;
+      background: #E8F5E9;
+      border-color: #C8E6C9;
+    }
+    .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tag-item {
+      background: #E8F5E9;
+      color: #4CAF50;
+      border: 1px solid #C8E6C9;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .tag-item:active { background: #C8E6C9; }
+    
+    /* 搜索结果列表 */
+    .result-header {
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .result-header .result-count { color: #888; font-size: 13px; }
+    .result-header .keyword-tag {
+      background: #E8F5E9;
+      color: #4CAF50;
+      padding: 2px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    
+    .method-list { padding: 0 12px 80px; }
+    .method-card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+    .method-card:active { transform: scale(0.98); }
+    .method-card .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #222;
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+    .method-card .card-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .card-tag {
+      background: #F1F8E9;
+      color: #558B2F;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-size: 12px;
+    }
+    .card-cost {
+      margin-left: auto;
+      color: #FF8C00;
+      font-size: 13px;
+    }
+    .card-summary {
+      color: #666;
+      font-size: 13px;
+      margin-top: 6px;
+      line-height: 1.5;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* 详情页 */
+    .detail-page {}
+    .detail-content {
+      padding: 16px;
+      background: white;
+      margin: 12px;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .detail-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    .detail-body {
+      font-size: 15px;
+      color: #444;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+    .detail-tags {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .detail-source {
+      margin-top: 14px;
+      padding: 8px 10px;
+      background: #f5f6f7;
+      border-radius: 6px;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* 评论区 */
+    .comment-section {
+      margin: 12px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .comment-textarea {
+      width: 100%;
+      border: 1px solid #e8e8e8;
+      border-radius: 8px;
+      padding: 10px;
+      font-size: 14px;
+      resize: none;
+      min-height: 80px;
+      outline: none;
+      color: #333;
+    }
+    .comment-textarea:focus { border-color: #4CAF50; }
+    
+    /* 分享区 */
+    .share-section {
+      margin: 12px;
+      background: white;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+    }
+    .share-hint {
+      color: #888;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .share-btn-group {
+      display: flex;
+      gap: 10px;
+    }
+    
+    /* 按钮 */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 10px 20px;
+      border-radius: 24px;
+      font-size: 14px;
+      border: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-primary { background: #4CAF50; color: white; }
+    .btn-primary:active { background: #388E3C; }
+    .btn-orange { background: #FF8C00; color: white; }
+    .btn-orange:active { background: #e67e00; }
+    .btn-outline { background: white; color: #4CAF50; border: 1px solid #4CAF50; }
+    .btn-outline:active { background: #E8F5E9; }
+    .btn-gray { background: #f5f5f5; color: #666; }
+    .btn-full { width: 100%; }
+    
+    /* 弹窗 */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      align-items: flex-end;
+    }
+    .modal-overlay.show { display: flex; }
+    .modal-box {
+      background: white;
+      border-radius: 16px 16px 0 0;
+      padding: 24px;
+      width: 100%;
+    }
+    .modal-title {
+      font-size: 16px;
+      font-weight: bold;
+      color: #222;
+      margin-bottom: 8px;
+    }
+    .modal-desc { color: #666; font-size: 14px; margin-bottom: 20px; }
+    .modal-btns { display: flex; gap: 10px; }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 999;
+      display: none;
+      text-align: center;
+      max-width: 240px;
+    }
+    .toast.show { display: block; }
+    
+    /* 回退按钮 */
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: white;
+      background: rgba(255,255,255,0.2);
+      border: none;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 13px;
+      cursor: pointer;
+      margin-right: 8px;
+    }
+    
+    /* 已查看标记 */
+    .unlocked-badge {
+      background: #E3F2FD;
+      color: #1565C0;
+      border-radius: 8px;
+      padding: 2px 8px;
+      font-size: 12px;
+    }
+    
+    /* 评论列表 */
+    .comment-item {
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .comment-item:last-child { border-bottom: none; }
+    .comment-user { color: #888; font-size: 12px; margin-bottom: 4px; }
+    .comment-text { font-size: 14px; color: #444; line-height: 1.5; }
+    
+    /* 加载中 */
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #aaa;
+      font-size: 14px;
+    }
+    
+    /* 空状态 */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #aaa;
+    }
+    .empty-state .emoji { font-size: 48px; margin-bottom: 12px; }
+    .empty-state p { font-size: 14px; }
+    
+    /* 底部固定操作栏 */
+    .bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      padding: 12px 16px;
+      box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+      display: flex;
+      gap: 10px;
+      z-index: 100;
+    }
+    
+    .fade-in { animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 翻页栏 */
+    .pager {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 14px 4px;
+    }
+    .pager-info { color: #888; font-size: 14px; flex: 1; text-align: center; }
+    .pager-jump {
+      text-align: center; color: #888; font-size: 13px;
+      padding: 4px 4px 12px;
+    }
+    .pager-jump input {
+      border: 1px solid #ccc; border-radius: 6px; padding: 4px 6px;
+      font-size: 13px; text-align: center; width: 56px;
+    }
+  </style>
+  <!-- 本地打包的 2.28.8 SDK（ESM 单文件，随页面托管，国内访问稳定，规避 1.x 的 ACCESS_TOKEN_DISABLED） -->
+  <script type="module">
+    import cloudbase from './cloudbase.bundle.mjs';
+    window.cloudbase = cloudbase;
+    window.__cbReady = true;
+    document.dispatchEvent(new Event('cb-ready'));
+  </script>
+</head>
+<body>
+
+<!-- 搜索主页 -->
+<div id="page-search" class="page active">
+  <div class="header">
+    <h1>🌿 邻里话养生</h1>
+    <p>传统养生小方法，邻里共享健康</p>
+    <a href="upload.html" style="display:inline-block;margin-top:8px;background:rgba(255,255,255,.22);color:#fff;padding:5px 14px;border-radius:16px;font-size:13px;text-decoration:none;">➕ 上传养生资料</a>
+  </div>
+  
+  <div class="points-bar">
+    <span class="points-label">💰 当前积分</span>
+    <span class="points-num" id="home-points">加载中...</span>
+  </div>
+  
+  <div class="search-box">
+    <div class="search-input-wrap">
+      <span>🔍</span>
+      <input type="text" id="search-input" placeholder="搜索症状或方法，如：头痛、失眠..." 
+             maxlength="20">
+      <button class="btn-search" onclick="doSearch()">搜索</button>
+    </div>
+  </div>
+  
+  <div class="hot-tags">
+    <h3>🔥 常见搜索</h3>
+    <div class="tag-list" id="hot-tags">
+      <span class="tag-item" onclick="searchTag('头痛')">头痛</span>
+      <span class="tag-item" onclick="searchTag('失眠')">失眠</span>
+      <span class="tag-item" onclick="searchTag('腰痛')">腰痛</span>
+      <span class="tag-item" onclick="searchTag('肩周炎')">肩周炎</span>
+      <span class="tag-item" onclick="searchTag('消化不良')">消化不良</span>
+      <span class="tag-item" onclick="searchTag('颈椎')">颈椎</span>
+      <span class="tag-item" onclick="searchTag('感冒')">感冒</span>
+      <span class="tag-item" onclick="searchTag('咳嗽')">咳嗽</span>
+      <span class="tag-item" onclick="searchTag('高血压')">高血压</span>
+      <span class="tag-item" onclick="searchTag('糖尿病')">糖尿病</span>
+      <span class="tag-item" onclick="searchTag('膝盖')">膝盖痛</span>
+      <span class="tag-item" onclick="searchTag('胃痛')">胃痛</span>
+    </div>
+  </div>
+
+  <div class="home-tabs">
+    <span class="tab active" id="tab-hot" onclick="switchHomeTab('hot')">🔥 热门</span>
+    <span class="tab" id="tab-all" onclick="switchHomeTab('all')">📚 全部</span>
+  </div>
+
+  <div class="method-list" id="home-list">
+    <div class="loading">加载热门小方法...</div>
+  </div>
+</div>
+
+<!-- 搜索结果页 -->
+<div id="page-list" class="page">
+  <div class="header">
+    <button class="back-btn" onclick="showPage('search')">← 返回</button>
+    <span id="list-header-title">搜索结果</span>
+  </div>
+  
+  <div class="points-bar">
+    <span class="points-label">💰 当前积分</span>
+    <span class="points-num" id="list-points">--</span>
+  </div>
+  
+  <div class="result-header">
+    <span id="result-count-text" class="result-count"></span>
+    <span id="keyword-tag" class="keyword-tag"></span>
+  </div>
+  
+  <div class="method-list" id="search-result-list">
+    <div class="loading">搜索中...</div>
+  </div>
+</div>
+
+<!-- 详情页 -->
+<div id="page-detail" class="page">
+  <div class="header">
+    <button class="back-btn" onclick="goBackToList()">← 返回</button>
+    <span>小方法详情</span>
+  </div>
+  
+  <div id="detail-locked-notice" style="display:none; padding:16px; background:#FFF8E1; margin:12px; border-radius:12px; text-align:center;">
+    <div style="font-size:32px;margin-bottom:8px;">🔒</div>
+    <div style="font-weight:bold;color:#333;margin-bottom:6px;" id="detail-title-preview"></div>
+    <div style="color:#888;font-size:13px;margin-bottom:16px;">查看完整内容需消耗 <span style="color:#FF8C00;font-weight:bold;">10积分</span></div>
+    <div style="color:#666;font-size:12px;margin-bottom:16px;">您当前积分：<span id="locked-points" style="color:#FF8C00;font-weight:bold;">--</span> 分</div>
+    <button class="btn btn-orange btn-full" onclick="unlockMethod()">确认兑换，查看完整内容</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" onclick="goBackToList()">先不看了</button>
+  </div>
+  
+  <div id="detail-content" style="display:none;">
+    <div class="detail-content fade-in">
+      <div class="detail-title" id="detail-title"></div>
+      <div id="detail-unlocked-tags" style="margin-bottom:10px;"></div>
+      <div class="detail-body" id="detail-body"></div>
+      <div class="detail-tags" id="detail-tags"></div>
+    </div>
+    
+    <!-- 评论区 -->
+    <div class="comment-section fade-in">
+      <div class="section-title">💬 邻里说说</div>
+      <div id="comments-list">
+        <div class="loading">加载评论...</div>
+      </div>
+      <div style="margin-top:12px;">
+        <textarea class="comment-textarea" id="comment-input" 
+                  placeholder="分享你的使用心得，获得 +5 积分！（至少5个字）" 
+                  maxlength="500"></textarea>
+        <div style="margin-top:8px;display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#888;font-size:12px;">评论可获 +5 积分（每日上限3次）</span>
+          <button class="btn btn-primary" onclick="submitComment()" style="padding:8px 16px;">发布评论</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 分享区 -->
+    <div class="share-section fade-in">
+      <div class="section-title">📤 分享方法</div>
+      <div class="share-hint">分享语音或视频经验给邻里，获得 +5 积分！</div>
+      <div class="share-btn-group">
+        <button class="btn btn-outline" onclick="shareVoice()" style="flex:1;">
+          🎙️ 语音分享
+        </button>
+        <button class="btn btn-outline" onclick="shareVideo()" style="flex:1;">
+          📹 视频分享
+        </button>
+      </div>
+      <div style="margin-top:8px;color:#aaa;font-size:12px;text-align:center;">
+        分享可获 +5 积分（每日上限3次）
+      </div>
+    </div>
+    
+    <div style="height: 80px;"></div>
+  </div>
+</div>
+
+<!-- 解锁确认弹窗 -->
+<div class="modal-overlay" id="unlock-modal">
+  <div class="modal-box">
+    <div class="modal-title">🔓 查看完整内容</div>
+    <div class="modal-desc" id="modal-desc">查看此方法需消耗 10 积分，您当前积分充足，确认查看吗？</div>
+    <div class="modal-btns">
+      <button class="btn btn-gray" style="flex:1;" onclick="closeModal()">再想想</button>
+      <button class="btn btn-orange" style="flex:2;" onclick="confirmUnlock()">确认扣10积分查看</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast提示 -->
+<div class="toast" id="toast"></div>
+
+<script src="./static-fallback.js?v=2026080401"></script>
+<script>
+// ==================== 配置 ====================
+const ENV_ID = 'a-111-d2g28k3679a4b653c';
+
+// 云开发 SDK 初始化（与 upload.html 一致）
+let app = null;
+async function initCloud() {
+  if (app) return app;
+  // ESM 模块异步加载，等待本地 bundle 就绪（最长 8s 兜底）
+  if (!window.cloudbase && !window.tcb) {
+    await new Promise(resolve => {
+      if (window.cloudbase || window.tcb) return resolve();
+      document.addEventListener('cb-ready', resolve, { once: true });
+      setTimeout(resolve, 8000);
+    });
+  }
+  const SDK = window.cloudbase || window.tcb;   // 兼容不同 CDN 的全局名
+  if (!SDK) throw new Error('云开发 SDK 未加载成功（网络问题），请刷新页面重试');
+  app = SDK.init({ env: ENV_ID });
+  return app;
+}
+
+// 游客身份：用匿名登录 uid 作用户标识（无需微信授权/手机号）
+let OPENID = localStorage.getItem('lnhys_openid') || '';
+async function ensureOpenid() {
+  if (OPENID) return OPENID;
+  // 全部请求已改走 HTTP 访问服务，不再依赖云 SDK 登录；
+  // 用户标识用本地稳定 UUID（同一浏览器不变，积分正常累计）
+  OPENID = localStorage.getItem('lnhys_openid') || localStorage.getItem('lnhys_uuid')
+    || ('u_' + Math.random().toString(36).slice(2) + Date.now().toString(36));
+  localStorage.setItem('lnhys_openid', OPENID);
+  // 首访自动注册并送 20 积分（幂等）
+  try { await callFn('pointsManager', { action: 'register' }); } catch (e) {}
+  return OPENID;
+}
+
+// 从URL获取参数（用于分享落地页等）
+function getUrlParam(name) {
+  const search = window.location.search || window.location.hash.split('?')[1] || '';
+  const params = new URLSearchParams(search.replace('#/', '').split('?')[1] || search);
+  return params.get(name);
+}
+
+if (OPENID) localStorage.setItem('lnhys_openid', OPENID);
+
+let currentKeyword = '';
+let currentMethodId = '';
+let currentMethodData = null;
+let fromPage = 'search';
+let currentAllPage = 1;
+let currentAllPageSize = 50;
+let currentSearchPage = 1;
+let currentSearchPageSize = 50;
+
+// ==================== 工具函数 ====================
+function showToast(msg, duration = 2000) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), duration);
+}
+
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + pageId).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function closeModal() {
+  document.getElementById('unlock-modal').classList.remove('show');
+}
+
+// ==================== 云函数调用（HTTP 访问服务，绕开 callFunction 权限限制） ====================
+const FN_BASE = 'https://a-111-d2g28k3679a4b653c-1416314897.ap-shanghai.app.tcloudbase.com/';
+const FN_PATHS = { queryMethods: 'querymethods', pointsManager: 'pointsmanager', commentShare: 'commentshare', autoImport: 'autoimportv2' };
+
+// 云端不可用时自动降级为「静态离线模式」（读取托管上的 data/*.json）
+let OFFLINE_MODE = false;
+function goOffline(reason) {
+  if (!OFFLINE_MODE) {
+    OFFLINE_MODE = true;
+    console.warn('切换到离线阅读模式:', reason);
+    if (window.LNHY_STATIC) window.LNHY_STATIC.banner();
+  }
+}
+
+async function callFn(fnName, data) {
+  // GitHub Pages 永久托管：无云端，直接走静态离线模式，避免 8s 云函数超时等待
+  if ((OFFLINE_MODE || location.hostname.endsWith('github.io')) && window.LNHY_STATIC) {
+    return window.LNHY_STATIC.handle(fnName, data);
+  }
+  try {
+    if (!OPENID) await ensureOpenid();
+    const path = FN_PATHS[fnName] || fnName.toLowerCase();
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 8000);
+    let resp;
+    try {
+      resp = await fetch(FN_BASE + path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(Object.assign({ openid: OPENID }, data)),
+        signal: ctl.signal,
+      });
+    } finally { clearTimeout(timer); }
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    return (await resp.json()) || {};
+  } catch (e) {
+    console.error('云函数调用失败:', e);
+    if (window.LNHY_STATIC) {
+      goOffline(e.message);
+      return window.LNHY_STATIC.handle(fnName, data);
+    }
+    return { error: e.message };
+  }
+}
+
+// ==================== 积分显示 ====================
+async function loadPoints(elementId) {
+  if (!OPENID) {
+    document.getElementById(elementId).textContent = '--';
+    return;
+  }
+  try {
+    const result = await callFn('pointsManager', { openid: OPENID, action: 'register' });
+    const pts = result.points || 0;
+    document.getElementById(elementId).textContent = pts + ' 分';
+    return pts;
+  } catch (e) {
+    document.getElementById(elementId).textContent = '--';
+  }
+}
+
+// ==================== 热门 / 全部 切换 ====================
+function switchHomeTab(tab) {
+  document.getElementById('tab-hot').classList.toggle('active', tab === 'hot');
+  document.getElementById('tab-all').classList.toggle('active', tab === 'all');
+  if (tab === 'all') loadAllMethods();
+  else loadHotMethods();
+}
+
+// ==================== 热门方法 ====================
+async function loadHotMethods() {
+  const list = document.getElementById('home-list');
+  try {
+    const result = await callFn('queryMethods', { action: 'getHot', openid: OPENID });
+    if (result.list && result.list.length > 0) {
+      list.innerHTML = `
+        <div style="padding: 0 0 8px; color:#888;font-size:13px;">🔥 热门小方法</div>
+        ${result.list.map(item => renderMethodCard(item)).join('')}
+      `;
+    } else {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🌱</div>
+          <p>搜索关键词找到您需要的养生小方法</p>
+        </div>`;
+    }
+  } catch (e) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">🌱</div>
+        <p>发送关键词开始搜索吧！</p>
+      </div>`;
+  }
+}
+
+// ==================== 全部方法 ====================
+async function loadAllMethods(page) {
+  if (page === undefined || page === null) page = 1;
+  currentAllPage = page;
+  const list = document.getElementById('home-list');
+  if (page === 1) list.innerHTML = '<div class="loading">📚 加载全部方法...</div>';
+  try {
+    const result = await callFn('queryMethods', {
+      action: 'getAll', openid: OPENID || '',
+      page: page, pageSize: currentAllPageSize
+    });
+    if (result.error) throw new Error(result.error);
+    if (!result.list || result.list.length === 0) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🌱</div>
+          <p>还没有方法，先去上传养生资料吧</p>
+        </div>`;
+      return;
+    }
+    const totalPages = result.totalPages || 1;
+    const header = `<div style="padding: 0 0 8px; color:#888;font-size:13px;">📚 全部方法（共 ${result.total} 条，第 ${result.page || page}/${totalPages} 页）</div>`;
+    const cards = result.list.map(item => renderMethodCard(item)).join('');
+    list.innerHTML = header + cards + renderPagination(page, totalPages, 'gotoAllPage');
+  } catch (e) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="emoji">⚠️</div>
+        <p>加载失败，请刷新页面重试</p>
+      </div>`;
+  }
+}
+
+function gotoAllPage(p) {
+  const np = parseInt(p, 10) || 1;
+  loadAllMethods(np);
+  window.scrollTo(0, 0);
+}
+
+// ==================== 搜索 ====================
+function searchTag(tag) {
+  document.getElementById('search-input').value = tag;
+  doSearch();
+}
+
+async function doSearch() {
+  const keyword = document.getElementById('search-input').value.trim();
+  if (!keyword) {
+    showToast('请输入搜索关键词');
+    return;
+  }
+  
+  currentKeyword = keyword;
+  currentSearchPage = 1;
+  fromPage = 'search';
+  showPage('list');
+  loadPoints('list-points');
+  
+  document.getElementById('list-header-title').textContent = `"${keyword}" 的结果`;
+  document.getElementById('keyword-tag').textContent = keyword;
+  
+  await runSearch(1);
+}
+
+async function runSearch(page) {
+  currentSearchPage = page;
+  const keyword = currentKeyword;
+  const listEl = document.getElementById('search-result-list');
+  listEl.innerHTML = '<div class="loading">🔍 搜索中...</div>';
+  
+  try {
+    const result = await callFn('queryMethods', {
+      action: 'search',
+      keyword,
+      openid: OPENID || '',
+      page: page,
+      pageSize: currentSearchPageSize
+    });
+    
+    if (!result || result.error) {
+      listEl.innerHTML = `<div class="empty-state"><div class="emoji">😅</div><p>查询出了点小问题，稍后再试</p></div>`;
+      return;
+    }
+    
+    if (result.total === 0) {
+      document.getElementById('result-count-text').textContent = '没有找到相关结果';
+      listEl.innerHTML = `
+        <div class="empty-state">
+          <div class="emoji">🔍</div>
+          <p>没有找到关于"${keyword}"的小方法</p>
+          <p style="margin-top:8px;">试试其他关键词吧</p>
+        </div>`;
+      return;
+    }
+    
+    const totalPages = result.totalPages || 1;
+    document.getElementById('result-count-text').textContent =
+      `共找到 ${result.total} 条（第 ${result.page || page}/${totalPages} 页）`;
+    const cards = result.list.map(item => renderMethodCard(item)).join('');
+    listEl.innerHTML = cards + renderPagination(page, totalPages, 'gotoSearchPage');
+    
+  } catch (e) {
+    listEl.innerHTML = `<div class="empty-state"><div class="emoji">😅</div><p>查询出错了，请重试</p></div>`;
+  }
+}
+
+function gotoSearchPage(p) {
+  runSearch(parseInt(p, 10) || 1);
+  window.scrollTo(0, 0);
+}
+
+// 通用翻页栏
+function renderPagination(page, totalPages, gotoFn) {
+  page = Math.max(1, parseInt(page, 10) || 1);
+  totalPages = Math.max(1, parseInt(totalPages, 10) || 1);
+  const prevDisabled = page <= 1 ? 'disabled style="opacity:.4;"' : '';
+  const nextDisabled = page >= totalPages ? 'disabled style="opacity:.4;"' : '';
+  return `
+    <div class="pager">
+      <button class="btn btn-gray" ${prevDisabled} onclick="${gotoFn}(${page - 1})">← 上一页</button>
+      <span class="pager-info">第 ${page} / ${totalPages} 页</span>
+      <button class="btn btn-gray" ${nextDisabled} onclick="${gotoFn}(${page + 1})">下一页 →</button>
+    </div>
+    <div class="pager-jump">
+      跳到 <input type="number" id="jump-page" min="1" max="${totalPages}" value="${page}"> 页
+      <button class="btn btn-outline" onclick="${gotoFn}(parseInt(document.getElementById('jump-page').value,10)||1)">跳转</button>
+    </div>`;
+}
+
+function renderMethodCard(item) {
+  const tags = (item.tags || []).slice(0, 3).map(t => 
+    `<span class="card-tag">${t}</span>`
+  ).join('');
+  
+  return `
+    <div class="method-card" onclick="openMethod('${item._id}', '${(item.title || '').replace(/'/g, "\\'")}')">
+      <div class="card-title">${item.title || '养生小方法'}</div>
+      <div class="card-meta">
+        ${item.symptom ? `<span class="card-tag">${item.symptom}</span>` : ''}
+        ${tags}
+        <span class="card-cost">10积分</span>
+      </div>
+      ${item.summary ? `<div class="card-summary">${item.summary}</div>` : ''}
+    </div>
+  `;
+}
+
+// ==================== 方法详情 ====================
+async function openMethod(methodId, title) {
+  currentMethodId = methodId;
+  showPage('detail');
+  
+  // 隐藏所有，先加载
+  document.getElementById('detail-locked-notice').style.display = 'none';
+  document.getElementById('detail-content').style.display = 'none';
+  
+  // 检查是否已解锁
+  try {
+    const result = await callFn('queryMethods', {
+      action: 'getDetail',
+      methodId,
+      openid: OPENID || ''
+    });
+    
+    if (result.success && result.data) {
+      // 已解锁，直接显示
+      showDetailContent(result.data, result.alreadyUnlocked);
+    } else if (result.needUnlock) {
+      // 需要解锁
+      document.getElementById('detail-title-preview').textContent = title;
+      
+      const pts = await loadPoints('list-points');
+      document.getElementById('locked-points').textContent = (pts || 0) + ' 分';
+      
+      document.getElementById('detail-locked-notice').style.display = 'block';
+    }
+  } catch (e) {
+    // 显示解锁界面
+    document.getElementById('detail-title-preview').textContent = title;
+    document.getElementById('detail-locked-notice').style.display = 'block';
+  }
+  
+  // 加载评论
+  loadComments(methodId);
+}
+
+function showDetailContent(data, alreadyUnlocked) {
+  document.getElementById('detail-locked-notice').style.display = 'none';
+  document.getElementById('detail-content').style.display = 'block';
+  
+  document.getElementById('detail-title').textContent = data.title || '养生小方法';
+  document.getElementById('detail-body').textContent = data.content || data.body || '';
+
+  const tagsEl = document.getElementById('detail-tags');
+  tagsEl.innerHTML = (data.tags || []).map(t => `<span class="card-tag">${t}</span>`).join('');
+  
+  if (alreadyUnlocked) {
+    document.getElementById('detail-unlocked-tags').innerHTML = 
+      '<span class="unlocked-badge">✅ 已解锁</span>';
+  }
+}
+
+async function unlockMethod() {
+  if (!OPENID) {
+    showToast('请通过公众号菜单访问');
+    return;
+  }
+  
+  // 先查积分（顺带确保已注册）
+  const result = await callFn('pointsManager', { openid: OPENID, action: 'register' });
+  const pts = result.points || 0;
+  
+  if (pts < 10) {
+    showToast(`积分不足！当前${pts}分，需要10分。评论或分享可获得5积分哦！`, 3000);
+    return;
+  }
+  
+  document.getElementById('modal-desc').textContent = 
+    `查看此方法需消耗 10 积分，您当前有 ${pts} 积分，确认查看吗？`;
+  document.getElementById('unlock-modal').classList.add('show');
+}
+
+async function confirmUnlock() {
+  closeModal();
+  showToast('解锁中...');
+  
+  try {
+    const result = await callFn('queryMethods', {
+      action: 'unlock',
+      methodId: currentMethodId,
+      openid: OPENID
+    });
+    
+    if (result.success) {
+      showToast(`✅ 已扣除10积分，剩余${result.remainingPoints}分`);
+      showDetailContent(result.data, false);
+      // 更新积分显示
+      document.getElementById('list-points').textContent = result.remainingPoints + ' 分';
+    } else if (result.error === 'insufficient_points') {
+      showToast(`积分不足！当前${result.currentPoints}分，需要10分`, 3000);
+    } else {
+      showToast('解锁失败，请重试');
+    }
+  } catch (e) {
+    showToast('解锁失败，请重试');
+  }
+}
+
+function goBackToList() {
+  showPage(fromPage === 'search' ? 'list' : 'search');
+}
+
+// ==================== 评论 ====================
+async function loadComments(methodId) {
+  const listEl = document.getElementById('comments-list');
+  try {
+    const result = await callFn('commentShare', {
+      action: 'getComments',
+      methodId,
+      openid: OPENID || ''
+    });
+    
+    if (!result.list || result.list.length === 0) {
+      listEl.innerHTML = '<div style="color:#aaa;font-size:13px;padding:8px 0;">还没有评论，来第一个！😊</div>';
+      return;
+    }
+    
+    listEl.innerHTML = result.list.map(item => `
+      <div class="comment-item">
+        <div class="comment-user">邻居 · ${formatTime(item.createTime)}</div>
+        <div class="comment-text">${escapeHtml(item.content)}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    listEl.innerHTML = '<div style="color:#aaa;font-size:13px;">加载评论失败</div>';
+  }
+}
+
+async function submitComment() {
+  if (!OPENID) { showToast('请通过公众号菜单访问'); return; }
+  
+  const content = document.getElementById('comment-input').value.trim();
+  if (content.length < 5) {
+    showToast('评论至少5个字哦');
+    return;
+  }
+  
+  try {
+    const result = await callFn('commentShare', {
+      action: 'comment',
+      methodId: currentMethodId,
+      openid: OPENID,
+      content
+    });
+    
+    if (result.success) {
+      showToast(result.message || '评论发布成功！');
+      document.getElementById('comment-input').value = '';
+      loadComments(currentMethodId);
+      if (result.pointsAdded > 0) {
+        document.getElementById('list-points').textContent = result.currentPoints + ' 分';
+      }
+    } else {
+      showToast(result.error || '评论发布失败');
+    }
+  } catch (e) {
+    showToast('评论失败，请重试');
+  }
+}
+
+// ==================== 分享 ====================
+function shareVoice() {
+  showToast('请在公众号对话框中发送语音消息即可获得积分 🎙️', 3000);
+}
+
+function shareVideo() {
+  showToast('请在公众号对话框中发送视频消息即可获得积分 📹', 3000);
+}
+
+// ==================== 工具 ====================
+function escapeHtml(str) {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatTime(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 60) return '刚刚';
+  if (diff < 3600) return Math.floor(diff/60) + '分钟前';
+  if (diff < 86400) return Math.floor(diff/3600) + '小时前';
+  return (d.getMonth()+1) + '/' + d.getDate();
+}
+
+// ==================== 路由 ====================
+async function initRoute() {
+  await ensureOpenid();
+  const hash = window.location.hash;
+  const kw = getUrlParam('kw');
+  
+  if (hash.includes('/list') && kw) {
+    currentKeyword = kw;
+    document.getElementById('search-input').value = kw;
+    showPage('search');
+    doSearch();
+  } else {
+    showPage('search');
+    loadPoints('home-points');
+    loadHotMethods();
+  }
+}
+
+// 回车搜索
+document.getElementById('search-input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doSearch();
+});
+
+// 初始化
+initRoute();
+</script>
+</body>
+</html>
