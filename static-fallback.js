@@ -10,6 +10,8 @@
   var KEY = 'lnhy2026yangsheng';
   var FREE_READ = true;   // 维护期免费阅读；云端恢复后此文件不再被调用
   var DATA_BASE = './data/';
+  // 自用完整数据：URL 加 ?internal=1 可显示「内服≥5味」复杂方（默认对用户隐藏，仅保留简便廉验方法）
+  var SHOW_INTERNAL = /[?&]internal=1/.test((typeof location !== 'undefined' ? location.search : '') || '');
   var idxCache = null;
   var idxPromise = null;
   var shardCache = {};
@@ -48,7 +50,7 @@
 
   // ---------- 数据加载 ----------
   function mapItem(a) {
-    return { _id: a[0], title: a[1], symptom: a[2], summary: a[3], tags: a[4] ? [a[4]] : [], source: a[4] || '', _sh: a[5], q: a[6] || 0 };
+    return { _id: a[0], title: a[1], symptom: a[2], summary: a[3], tags: a[4] ? [a[4]] : [], source: a[4] || '', _sh: a[5], q: a[6] || 0, flag: a[7] || 0 };
   }
   // 带一次重试的 fetch（防瞬断导致整块丢失）
   function fetchJSON(url) {
@@ -155,8 +157,10 @@
   function rank(list, kw) {
     var out = [];
     for (var i = 0; i < list.length; i++) {
-      var sc = score(list[i], kw);
-      if (sc > 0) out.push({ s: sc, it: list[i] });
+      var it = list[i];
+      if (it.flag === 1 && !SHOW_INTERNAL) continue;   // 默认隐藏 内服≥5味 复杂方（用户端）
+      var sc = score(it, kw);
+      if (sc > 0) out.push({ s: sc, it: it });
     }
     out.sort(function (a, b) { return b.s - a.s; });
     return out.map(function (x) { return x.it; });
@@ -193,7 +197,8 @@
       };
       if (action === 'getHot') {
         return loadIdx().then(function (l) {
-          return { success: true, list: l.slice(0, 20).map(card), total: l.length, offline: true };
+          var hot = l.filter(function (x) { return !(x.flag === 1 && !SHOW_INTERNAL); });
+          return { success: true, list: hot.slice(0, 20).map(card), total: l.length, offline: true };
         });
       }
       if (action === 'getAll') {
