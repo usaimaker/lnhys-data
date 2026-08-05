@@ -10,8 +10,8 @@
   var KEY = 'lnhy2026yangsheng';
   var FREE_READ = true;   // 维护期免费阅读；云端恢复后此文件不再被调用
   var DATA_BASE = './data/';
-  // 自用完整数据：URL 加 ?internal=1 可显示「内服≥5味」复杂方（默认对用户隐藏，仅保留简便廉验方法）
-  var SHOW_INTERNAL = /[?&]internal=1/.test((typeof location !== 'undefined' ? location.search : '') || '');
+  // 自用完整数据：URL 加 ?full（或 ?internal=1）可显示「内服≥5味」复杂方（默认对用户隐藏，仅保留简便廉验方法）
+  var SHOW_INTERNAL = /[?&](?:internal=1|full)(?:&|=|$)/.test((typeof location !== 'undefined' ? location.search : '') || '');
   var idxCache = null;
   var idxPromise = null;
   var shardCache = {};
