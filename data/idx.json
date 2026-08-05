@@ -1,1 +1,1 @@
-{"v":11,"n":75174,"shards":16,"chunks":["idx.0.json","idx.1.json","idx.2.json","idx.3.json","idx.4.json","idx.5.json","idx.6.json","idx.7.json","idx.8.json","idx.9.json"],"good":75174,"best":75984,"updated":"2026-08-05","note":"v11 修正成分保留 + 跨书/同书去重"}
+{"v":11,"n":74755,"shards":16,"chunks":["idx.0.json","idx.1.json","idx.2.json","idx.3.json","idx.4.json","idx.5.json","idx.6.json","idx.7.json","idx.8.json","idx.9.json"],"good":74755,"best":74755,"updated":"2026-08-05","note":"v11 后处理：清括号/标签/风险泄漏 + 修药名 + 重算flag + 重生分片"}
