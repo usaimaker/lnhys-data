@@ -1,1 +1,1 @@
-{"v":11,"n":93657,"shards":16,"chunks":["idx.0.json","idx.1.json","idx.2.json","idx.3.json","idx.4.json","idx.5.json","idx.6.json","idx.7.json","idx.8.json","idx.9.json","idx.10.json","idx.11.json"],"good":93657,"best":71060,"updated":"2026-08-05","note":"v11 修正成分保留 + 跨书/同书去重"}
+{"v":11,"n":93640,"shards":16,"chunks":["idx.0.json","idx.1.json","idx.2.json","idx.3.json","idx.4.json","idx.5.json","idx.6.json","idx.7.json","idx.8.json","idx.9.json","idx.10.json","idx.11.json"],"good":93640,"best":69952,"updated":"2026-08-05","note":"v11 修正成分保留 + 跨书/同书去重"}
