@@ -364,6 +364,7 @@
     } catch (e) {}
   }
 
+  function allItems() { return idxCache || []; }
   global.LNHY_STATIC = {
     handle: handle,
     loadIdx: loadIdx,
@@ -371,6 +372,7 @@
     getContent: getContent,
     findById: findById,
     banner: banner,
-    getPoints: getPoints
+    getPoints: getPoints,
+    allItems: allItems
   };
 })(window);
