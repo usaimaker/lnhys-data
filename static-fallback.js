@@ -157,23 +157,37 @@
   }
 
   // ---------- 搜索 ----------
-  function score(it, kw) {
+  // 人群词（孕妇/儿童/哺乳期…）：搜这些词的用户要的是「适用」方，而非「孕妇禁用」的禁忌说明。
+  // 因此若仅在【风险提示】命中（即禁忌），不计入正向结果，避免把 7 万条禁忌方当推荐返回。
+  var POP_TERMS = ["孕妇", "儿童", "哺乳期", "婴儿", "幼儿", "产妇", "经期", "经期"];
+  function isPopKw(kw) {
+    for (var i = 0; i < POP_TERMS.length; i++) if (kw.indexOf(POP_TERMS[i]) >= 0) return true;
+    return false;
+  }
+  function bodyNoRisk(it) {
+    var s = it.summary || "";
+    var i = s.indexOf("【风险提示】");
+    return i < 0 ? s : s.slice(0, i);
+  }
+  function score(it, kw, excludeRisk) {
     var s = 0;
     if (it.title && it.title.indexOf(kw) >= 0) s += 10;
     if (it.symptom && it.symptom.indexOf(kw) >= 0) s += 8;
     for (var i = 0; i < it.tags.length; i++) if (it.tags[i].indexOf(kw) >= 0) s += 6;
-    if (it.summary && it.summary.indexOf(kw) >= 0) s += 3;
+    var body = excludeRisk ? bodyNoRisk(it) : (it.summary || "");
+    if (body.indexOf(kw) >= 0) s += 3;
     if (!s && it._ft && it._ft.indexOf(kw) >= 0) s += 2;   // 正文命中
     if (s > 0) s += (it.q || 0) * 4;   // 已校对内容优先
     return s;
   }
 
   function rank(list, kw) {
+    var pop = isPopKw(kw);
     var out = [];
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
       if (it.flag === 1 && !SHOW_INTERNAL) continue;   // 默认隐藏 内服≥5味 复杂方（用户端）
-      var sc = score(it, kw);
+      var sc = score(it, kw, pop);
       if (sc > 0) out.push({ s: sc, it: it });
     }
     out.sort(function (a, b) { return b.s - a.s; });
@@ -183,7 +197,20 @@
   function search(kw) {
     return loadIdx().then(function (list) {
       return buildFullText()
-        .then(function () { return rank(list, kw); })
+        .then(function () {
+          var res = rank(list, kw);
+          // 同义扩展：宝宝/婴儿/幼儿 + 病名 → 同时搜裸病名（如「宝宝湿疹」也召回「湿疹」）
+          var m = /^(宝宝|婴儿|幼儿)(.+)$/.exec(kw);
+          if (m && m[2]) {
+            var r2 = rank(list, m[2]);
+            var seen = {}, merged = [];
+            res.concat(r2).forEach(function (it) {
+              if (!seen[it._id]) { seen[it._id] = 1; merged.push(it); }
+            });
+            res = merged;
+          }
+          return res;
+        })
         .catch(function () { return rank(list, kw); });
     });
   }
