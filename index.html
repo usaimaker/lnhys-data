@@ -653,13 +653,11 @@ function closeModal() {
 const FN_BASE = 'https://a-111-d2g28k3679a4b653c-1416314897.ap-shanghai.app.tcloudbase.com/';
 const FN_PATHS = { queryMethods: 'querymethods', pointsManager: 'pointsmanager', commentShare: 'commentshare', autoImport: 'autoimportv2' };
 
-// 云端不可用时自动降级为「静态离线模式」（读取托管上的 data/*.json）
-let OFFLINE_MODE = false;
-// CloudBase 静态托管（国内直连）：云端冻结期强制离线阅读，避免每次请求 8s 云函数超时
-if (location.hostname.indexOf('tcloudbase') >= 0) {
-  OFFLINE_MODE = true;
-  if (window.LNHY_STATIC) window.LNHY_STATIC.banner();
-}
+// 云端（云函数）处于冻结期，阅读站一律走「静态离线模式」（直接读托管上的 data/*.json），
+// 永不调用云函数 —— 既避免 8s 云函数超时，也杜绝「请求失败 / HTTP 非 200」类报错。
+// 静态托管上的数据即权威源（与 GitHub Pages 镜像字节级一致）。
+let OFFLINE_MODE = true;
+if (window.LNHY_STATIC) window.LNHY_STATIC.banner();
 function goOffline(reason) {
   if (!OFFLINE_MODE) {
     OFFLINE_MODE = true;
