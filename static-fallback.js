@@ -14,6 +14,7 @@
   var SHOW_INTERNAL = /[?&](?:internal=1|full)(?:&|=|$)/.test((typeof location !== 'undefined' ? location.search : '') || '');
   var idxCache = null;
   var idxPromise = null;
+  var idxMeta = null;   // idx.json 顶层元数据（v/n/updated...），用于前端版本显示
   var shardCache = {};
 
   // ---------- 存储（本地积分 / 解锁 / 评论） ----------
@@ -69,6 +70,8 @@
     if (idxPromise) return idxPromise;
     idxPromise = fetchJSON(DATA_BASE + 'idx.json')
       .then(function (j) {
+        idxMeta = j || null;
+        renderVersion();
         // 兼容单文件 idx(v6) 与分块 idx(v7: manifest.chunks)
         if (!j.chunks) {
           idxCache = (j.items || []).map(mapItem);
@@ -85,6 +88,17 @@
       })
       .catch(function (e) { idxPromise = null; throw e; });
     return idxPromise;
+  }
+
+  // 把 idx.json 的 v/n/updated 显示到页面头部，便于肉眼确认线上是最新版
+  function renderVersion() {
+    var el = (typeof document !== 'undefined') ? document.getElementById('data-version') : null;
+    if (!el || !idxMeta) return;
+    var parts = [];
+    if (idxMeta.v) parts.push('数据 v' + idxMeta.v);
+    if (idxMeta.n) parts.push('共 ' + idxMeta.n + ' 条');
+    if (idxMeta.updated) parts.push('更新于 ' + idxMeta.updated);
+    el.textContent = '📊 ' + parts.join(' · ');
   }
 
   function loadShard(n) {
