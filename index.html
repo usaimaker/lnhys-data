@@ -106,6 +106,37 @@
       background: #E8F5E9;
       border-color: #C8E6C9;
     }
+    /* 类别筛选栏 */
+    .cat-bar {
+      display: flex;
+      gap: 8px;
+      padding: 8px 16px 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
+      border-bottom: 1px solid #ededed;
+      background: white;
+    }
+    .cat-bar::-webkit-scrollbar { display: none; }
+    .cat-chip {
+      display: inline-block;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #666;
+      background: #f5f5f0;
+      border: 1px solid #e3e3e3;
+      border-radius: 18px;
+      cursor: pointer;
+      flex: 0 0 auto;
+    }
+    .cat-chip:active { transform: scale(0.97); }
+    .cat-chip.active {
+      color: #fff;
+      background: #4CAF50;
+      border-color: #4CAF50;
+      box-shadow: 0 2px 6px rgba(76,175,80,0.3);
+    }
     .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
     .tag-item {
       background: #E8F5E9;
@@ -472,6 +503,8 @@
     <span class="tab" id="tab-all" onclick="switchHomeTab('all')">📚 全部</span>
   </div>
 
+  <div class="cat-bar" id="cat-bar"></div>
+
   <div class="method-list" id="home-list">
     <div class="loading">加载热门小方法...</div>
   </div>
@@ -509,9 +542,9 @@
   <div id="detail-locked-notice" style="display:none; padding:16px; background:#FFF8E1; margin:12px; border-radius:12px; text-align:center;">
     <div style="font-size:32px;margin-bottom:8px;">🔒</div>
     <div style="font-weight:bold;color:#333;margin-bottom:6px;" id="detail-title-preview"></div>
-    <div style="color:#888;font-size:13px;margin-bottom:16px;">查看完整内容需消耗 <span style="color:#FF8C00;font-weight:bold;">10积分</span></div>
-    <div style="color:#666;font-size:12px;margin-bottom:16px;">您当前积分：<span id="locked-points" style="color:#FF8C00;font-weight:bold;">--</span> 分</div>
-    <button class="btn btn-orange btn-full" onclick="unlockMethod()">确认兑换，查看完整内容</button>
+    <div style="color:#888;font-size:13px;margin-bottom:16px;">维护期全部免费开放，直接查看完整内容</div>
+    <div style="color:#666;font-size:12px;margin-bottom:16px;">维护期内容全部免费，无需积分</div>
+    <button class="btn btn-orange btn-full" onclick="unlockMethod()">免费查看完整内容</button>
     <button class="btn btn-gray btn-full" style="margin-top:8px;" onclick="goBackToList()">先不看了</button>
   </div>
   
@@ -565,10 +598,10 @@
 <div class="modal-overlay" id="unlock-modal">
   <div class="modal-box">
     <div class="modal-title">🔓 查看完整内容</div>
-    <div class="modal-desc" id="modal-desc">查看此方法需消耗 10 积分，您当前积分充足，确认查看吗？</div>
+    <div class="modal-desc" id="modal-desc">维护期内容免费开放，确认查看完整方法吗？</div>
     <div class="modal-btns">
       <button class="btn btn-gray" style="flex:1;" onclick="closeModal()">再想想</button>
-      <button class="btn btn-orange" style="flex:2;" onclick="confirmUnlock()">确认扣10积分查看</button>
+      <button class="btn btn-orange" style="flex:2;" onclick="confirmUnlock()">免费查看</button>
     </div>
   </div>
 </div>
@@ -717,9 +750,60 @@ async function loadPoints(elementId) {
 function switchHomeTab(tab) {
   document.getElementById('tab-hot').classList.toggle('active', tab === 'hot');
   document.getElementById('tab-all').classList.toggle('active', tab === 'all');
-  if (tab === 'all') loadAllMethods();
-  else loadHotMethods();
+  if (tab === 'all') {
+    if (window.LNHY_STATIC && window.LNHY_STATIC.allItems) {
+      window.LNHY_STATIC.loadIdx().then(function () { buildCatBar(); loadCatList('', 1); });
+    } else {
+      loadAllMethods();
+    }
+  } else loadHotMethods();
 }
+
+// ==================== 按方法类别筛选 ====================
+let currentCat = '';
+function buildCatBar() {
+  const all = (window.LNHY_STATIC && window.LNHY_STATIC.allItems) ? window.LNHY_STATIC.allItems() : [];
+  const counts = {};
+  all.forEach(function (it) {
+    const cat = ((it.title || '').split('·').pop().trim()) || '其他';
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+  const cats = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+  const bar = document.getElementById('cat-bar');
+  if (!bar) return;
+  let html = '<span class="cat-chip ' + (currentCat === '' ? 'active' : '') + '" onclick="switchCat(\'\')">全部 ' + all.length + '</span>';
+  cats.forEach(function (c) {
+    const act = currentCat === c ? 'active' : '';
+    html += '<span class="cat-chip ' + act + '" onclick="switchCat(\'' + c.replace(/'/g, "\\'") + '\')">' + esc(c) + ' ' + counts[c] + '</span>';
+  });
+  bar.innerHTML = html;
+}
+function switchCat(cat) {
+  currentCat = cat || '';
+  buildCatBar();
+  loadCatList(currentCat, 1);
+}
+function loadCatList(cat, page) {
+  currentCat = cat || '';
+  page = Math.max(1, parseInt(page, 10) || 1);
+  const all = (window.LNHY_STATIC && window.LNHY_STATIC.allItems) ? window.LNHY_STATIC.allItems() : [];
+  let list = all;
+  if (currentCat) list = all.filter(function (it) { return ((it.title || '').split('·').pop().trim()) === currentCat; });
+  const pageSize = currentAllPageSize;
+  const total = list.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const start = (page - 1) * pageSize;
+  const slice = list.slice(start, start + pageSize);
+  const el = document.getElementById('home-list');
+  if (!slice.length) {
+    el.innerHTML = '<div class="empty-state"><div class="emoji">🌱</div><p>该分类暂无内容</p></div>';
+    return;
+  }
+  const header = '<div style="padding:0 0 8px;color:#888;font-size:13px;">📂 ' + esc(currentCat || '全部方法') + '（共 ' + total + ' 条，第 ' + page + '/' + totalPages + ' 页）</div>';
+  el.innerHTML = header + slice.map(renderMethodCard).join('') + renderPagination(page, totalPages, 'gotoCatPage');
+  window.scrollTo(0, 0);
+}
+function gotoCatPage(p) { loadCatList(currentCat, p); }
 
 // ==================== 热门方法 ====================
 async function loadHotMethods() {
@@ -876,20 +960,29 @@ function renderPagination(page, totalPages, gotoFn) {
     </div>`;
 }
 
+function esc(s) {
+  return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 function renderMethodCard(item) {
+  const full = item.summary || '';
+  const mm = /【治疗方法】(.*?)(?:\n【来源】|$)/.exec(full);
+  let short = mm ? mm[1].replace(/\n/g, ' ').trim() : full.replace(/\n/g, ' ').trim();
+  if (short.length > 46) short = short.slice(0, 46) + '…';
   const tags = (item.tags || []).slice(0, 3).map(t => 
-    `<span class="card-tag">${t}</span>`
+    `<span class="card-tag">${esc(t)}</span>`
   ).join('');
+  const title = esc(item.title || '养生小方法');
+  const sym = esc(item.symptom || '');
   
   return `
     <div class="method-card" onclick="openMethod('${item._id}', '${(item.title || '').replace(/'/g, "\\'")}')">
-      <div class="card-title">${item.title || '养生小方法'}</div>
+      <div class="card-title">${title}</div>
       <div class="card-meta">
-        ${item.symptom ? `<span class="card-tag">${item.symptom}</span>` : ''}
+        ${sym ? `<span class="card-tag">${sym}</span>` : ''}
         ${tags}
-        <span class="card-cost">10积分</span>
+        <span class="card-cost">免费</span>
       </div>
-      ${item.summary ? `<div class="card-summary">${item.summary}</div>` : ''}
+      ${short ? `<div class="card-summary">${esc(short)}</div>` : ''}
     </div>
   `;
 }
@@ -960,12 +1053,12 @@ async function unlockMethod() {
   const pts = result.points || 0;
   
   if (pts < 10) {
-    showToast(`积分不足！当前${pts}分，需要10分。评论或分享可获得5积分哦！`, 3000);
+    showToast(`维护期内容免费开放，直接查看即可`, 3000);
     return;
   }
   
-  document.getElementById('modal-desc').textContent = 
-    `查看此方法需消耗 10 积分，您当前有 ${pts} 积分，确认查看吗？`;
+    document.getElementById('modal-desc').textContent = 
+    `维护期内容免费开放，确认查看吗？`;
   document.getElementById('unlock-modal').classList.add('show');
 }
 
@@ -981,12 +1074,12 @@ async function confirmUnlock() {
     });
     
     if (result.success) {
-      showToast(`✅ 已扣除10积分，剩余${result.remainingPoints}分`);
+      showToast(`✅ 已免费解锁，内容如下`);
       showDetailContent(result.data, false);
       // 更新积分显示
       document.getElementById('list-points').textContent = result.remainingPoints + ' 分';
     } else if (result.error === 'insufficient_points') {
-      showToast(`积分不足！当前${result.currentPoints}分，需要10分`, 3000);
+      showToast(`维护期内容免费，直接查看即可`, 3000);
     } else {
       showToast('解锁失败，请重试');
     }
