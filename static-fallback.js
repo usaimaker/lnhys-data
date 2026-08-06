@@ -57,18 +57,16 @@ var RAW_BASE = 'https://raw.githubusercontent.com/usaimaker/lnhys-data/data/data
   // 带一次重试的 fetch（防瞬断导致整块丢失）
   function fetchJSON(url) {
     return fetch(url, { cache: 'no-cache' }).then(function (r) {
-      if (!r.ok) throw new Error('http' + r.status);
-      return r.json();
-    }).catch(function (e) {
-      if (RAW_BASE && url.indexOf('./data/') === 0) {
-        var ru = RAW_BASE + url.slice('./data/'.length);
-        return fetch(ru, { cache: 'no-cache' }).then(function (r2) { if (!r2.ok) throw new Error('http' + r2.status); return r2.json(); });
-      }
-      throw e;
-    });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).catch(function (e) {
+      if (RAW_BASE && typeof url === 'string' && url.indexOf('./data/') === 0) {
+        var ru = RAW_BASE + url.slice('./data/'.length);
+        return fetch(ru, { cache: 'no-cache' }).then(function (r2) {
+          if (!r2.ok) throw new Error('HTTP ' + r2.status);
+          return r2.json();
+        });
+      }
       return fetch(url, { cache: 'no-store' }).then(function (r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.json();
@@ -113,7 +111,7 @@ var RAW_BASE = 'https://raw.githubusercontent.com/usaimaker/lnhys-data/data/data
 
   function loadShard(n) {
     if (shardCache[n]) return Promise.resolve(shardCache[n]);
-    return fetch(DATA_BASE + 'c/' + n + '.json', { cache: 'no-cache' })
+    return fetchJSON(DATA_BASE + 'c/' + n + '.json')
       .then(function (r) {
         if (!r.ok) throw new Error('shard HTTP ' + r.status);
         return r.json();
