@@ -10,6 +10,7 @@
   var KEY = 'lnhy2026yangsheng';
   var FREE_READ = true;   // 维护期免费阅读；云端恢复后此文件不再被调用
   var DATA_BASE = './data/';
+var RAW_BASE = 'https://raw.githubusercontent.com/usaimaker/lnhys-data/data/data/';
   // 自用完整数据：URL 加 ?full（或 ?internal=1）可显示「内服≥5味」复杂方（默认对用户隐藏，仅保留简便廉验方法）
   var SHOW_INTERNAL = /[?&](?:internal=1|full)(?:&|=|$)/.test((typeof location !== 'undefined' ? location.search : '') || '');
   var idxCache = null;
@@ -56,6 +57,15 @@
   // 带一次重试的 fetch（防瞬断导致整块丢失）
   function fetchJSON(url) {
     return fetch(url, { cache: 'no-cache' }).then(function (r) {
+      if (!r.ok) throw new Error('http' + r.status);
+      return r.json();
+    }).catch(function (e) {
+      if (RAW_BASE && url.indexOf('./data/') === 0) {
+        var ru = RAW_BASE + url.slice('./data/'.length);
+        return fetch(ru, { cache: 'no-cache' }).then(function (r2) { if (!r2.ok) throw new Error('http' + r2.status); return r2.json(); });
+      }
+      throw e;
+    });
       if (!r.ok) throw new Error('HTTP ' + r.status);
       return r.json();
     }).catch(function (e) {
