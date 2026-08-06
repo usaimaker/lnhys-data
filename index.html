@@ -963,6 +963,14 @@ function renderPagination(page, totalPages, gotoFn) {
 function esc(s) {
   return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// 内联 onclick 里的 JS 字符串实参：先做 JS 转义，再做 HTML 属性转义（防标题含 " ' \ 破属性）
+function jsArg(s) {
+  var js = "'" + String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+    .replace(/[\r\n]+/g, ' ') + "'";
+  return js.replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+           .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
 function renderMethodCard(item) {
   const full = item.summary || '';
   const mm = /【治疗方法】(.*?)(?:\n【来源】|$)/.exec(full);
@@ -975,7 +983,7 @@ function renderMethodCard(item) {
   const sym = esc(item.symptom || '');
   
   return `
-    <div class="method-card" onclick="openMethod('${item._id}', '${(item.title || '').replace(/'/g, "\\'")}')">
+    <div class="method-card" onclick="openMethod(${jsArg(item._id)}, ${jsArg(item.title || '')})">
       <div class="card-title">${title}</div>
       <div class="card-meta">
         ${sym ? `<span class="card-tag">${sym}</span>` : ''}
@@ -1034,7 +1042,7 @@ function showDetailContent(data, alreadyUnlocked) {
   document.getElementById('detail-body').textContent = data.content || data.body || '';
 
   const tagsEl = document.getElementById('detail-tags');
-  tagsEl.innerHTML = (data.tags || []).map(t => `<span class="card-tag">${t}</span>`).join('');
+  tagsEl.innerHTML = (data.tags || []).map(t => `<span class="card-tag">${esc(t)}</span>`).join('');
   
   if (alreadyUnlocked) {
     document.getElementById('detail-unlocked-tags').innerHTML = 
@@ -1043,23 +1051,20 @@ function showDetailContent(data, alreadyUnlocked) {
 }
 
 async function unlockMethod() {
-  if (!OPENID) {
-    showToast('请通过公众号菜单访问');
-    return;
-  }
-  
-  // 先查积分（顺带确保已注册）
-  const result = await callFn('pointsManager', { openid: OPENID, action: 'register' });
-  const pts = result.points || 0;
-  
-  if (pts < 10) {
-    showToast(`维护期内容免费开放，直接查看即可`, 3000);
-    return;
-  }
-  
-    document.getElementById('modal-desc').textContent = 
-    `维护期内容免费开放，确认查看吗？`;
-  document.getElementById('unlock-modal').classList.add('show');
+  // 维护期：内容全部免费，直接重取详情展示，不依赖 openid / 积分
+  showToast('加载中...');
+  try {
+    const result = await callFn('queryMethods', {
+      action: 'getDetail',
+      methodId: currentMethodId,
+      openid: OPENID || ''
+    });
+    if (result && result.success && result.data) {
+      showDetailContent(result.data, true);
+      return;
+    }
+  } catch (e) { /* 落到下方提示 */ }
+  showToast('内容加载失败，请返回列表重试', 3000);
 }
 
 async function confirmUnlock() {
