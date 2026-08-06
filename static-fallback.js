@@ -186,7 +186,9 @@
     var out = [];
     for (var i = 0; i < list.length; i++) {
       var it = list[i];
-      if (it.flag === 1 && !SHOW_INTERNAL) continue;   // 默认隐藏 内服≥5味 复杂方（用户端）
+      // 默认隐藏：flag=1 内服≥5味复杂方；flag=2 正文无可执行内容（缺药材/用法，看了也不知怎么用）
+      // 二者都不删数据，加 ?full 或 ?internal=1 仍可查全
+      if (it.flag && !SHOW_INTERNAL) continue;
       var sc = score(it, kw, pop);
       if (sc > 0) out.push({ s: sc, it: it });
     }
@@ -236,15 +238,20 @@
         return { page: page, pageSize: pageSize, total: total, totalPages: totalPages,
                  list: l.slice(start, start + pageSize).map(card) };
       };
+      // 可见集：flag=1（内服≥5味复杂方）与 flag=2（正文无可执行内容）默认不展示。
+      // 之前只有 getHot/rank 过滤，getAll「浏览全部」是漏网出口 —— 会把隐藏条目直接翻出来。
+      var VIS = function (l) {
+        return SHOW_INTERNAL ? l : l.filter(function (x) { return !x.flag; });
+      };
       if (action === 'getHot') {
         return loadIdx().then(function (l) {
-          var hot = l.filter(function (x) { return !(x.flag === 1 && !SHOW_INTERNAL); });
-          return { success: true, list: hot.slice(0, 20).map(card), total: l.length, offline: true };
+          var hot = VIS(l);
+          return { success: true, list: hot.slice(0, 20).map(card), total: hot.length, offline: true };
         });
       }
       if (action === 'getAll') {
         return loadIdx().then(function (l) {
-          var p = PG(l, data.page, data.pageSize);
+          var p = PG(VIS(l), data.page, data.pageSize);
           return { success: true, list: p.list, total: p.total, page: p.page,
                    pageSize: p.pageSize, totalPages: p.totalPages, offline: true };
         });
