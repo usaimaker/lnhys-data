@@ -33,6 +33,24 @@
   function unlockedSet() { return lsGet('lnhy_unlocked', {}); }
   function markUnlocked(id) { var u = unlockedSet(); u[id] = 1; lsSet('lnhy_unlocked', u); }
 
+  // 每日加分上限（评论 / 分享 各 3 次 / 天），localStorage 实现，离线生效
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+  }
+  function dailyCount(type) {
+    var k = 'lnhy_daily_' + type;
+    var o = lsGet(k, null);
+    if (!o || o.date !== todayStr()) { o = { date: todayStr(), n: 0 }; lsSet(k, o); }
+    return o;
+  }
+  function bumpDaily(type) {
+    var o = dailyCount(type);
+    o.n = (o.n || 0) + 1;
+    lsSet('lnhy_daily_' + type, o);
+    return o.n;
+  }
+
   // ---------- 解码 ----------
   function deobf(b64) {
     var bin = atob(b64);
@@ -307,13 +325,33 @@
         return Promise.resolve({ success: true, list: lsGet(key, []), offline: true });
       }
       if (action === 'comment') {
+        var dc = dailyCount('comment');
+        if (dc.n >= 3) {
+          var arr0 = lsGet(key, []);
+          arr0.unshift({ content: data.content, createTime: Date.now() });
+          lsSet(key, arr0.slice(0, 50));
+          return Promise.resolve({ success: true, message: '今日评论积分已达上限（3次），评论已保存', pointsAdded: 0, currentPoints: getPoints(), offline: true });
+        }
         var arr = lsGet(key, []);
         arr.unshift({ content: data.content, createTime: Date.now() });
         lsSet(key, arr.slice(0, 50));
+        bumpDaily('comment');
         var np = setPoints(getPoints() + 5);
         return Promise.resolve({
-          success: true, message: '评论已保存（离线模式，仅本机可见）',
+          success: true, message: '评论已保存，+5 积分（每日上限3次）',
           pointsAdded: 5, currentPoints: np, offline: true
+        });
+      }
+      if (action === 'share') {
+        var ds = dailyCount('share');
+        if (ds.n >= 3) {
+          return Promise.resolve({ success: true, message: '今日分享积分已达上限（3次）', pointsAdded: 0, currentPoints: getPoints(), offline: true });
+        }
+        bumpDaily('share');
+        var np2 = setPoints(getPoints() + 5);
+        return Promise.resolve({
+          success: true, message: '分享成功，+5 积分（每日上限3次）',
+          pointsAdded: 5, currentPoints: np2, offline: true
         });
       }
       return Promise.resolve({ error: 'offline_unsupported', offline: true });
