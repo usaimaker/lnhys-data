@@ -1214,9 +1214,7 @@ async function submitComment() {
       showToast(result.message || '评论发布成功！');
       document.getElementById('comment-input').value = '';
       loadComments(currentMethodId);
-      if (result.pointsAdded > 0) {
-        document.getElementById('list-points').textContent = result.currentPoints + ' 分';
-      }
+      refreshAllPoints();
     } else {
       showToast(result.error || '评论发布失败');
     }
@@ -1226,12 +1224,35 @@ async function submitComment() {
 }
 
 // ==================== 分享 ====================
-function shareVoice() {
-  showToast('请在公众号对话框中发送语音消息即可获得积分 🎙️', 3000);
+// 统一刷新首页与列表两处积分显示
+async function refreshAllPoints() {
+  const p = await loadPoints('list-points');
+  const el = document.getElementById('home-points');
+  if (el && p != null) el.textContent = p + ' 分';
 }
 
-function shareVideo() {
-  showToast('请在公众号对话框中发送视频消息即可获得积分 📹', 3000);
+async function shareVoice() {
+  try {
+    const result = await callFn('commentShare', { action: 'share', openid: OPENID, kind: 'voice' });
+    if (result && result.success) {
+      showToast(result.pointsAdded > 0 ? '语音分享成功，+5 积分！🎙️' : (result.message || '分享成功'), 3000);
+      await refreshAllPoints();
+    } else {
+      showToast((result && result.error) || '操作失败', 3000);
+    }
+  } catch (e) { showToast('操作失败，请重试', 3000); }
+}
+
+async function shareVideo() {
+  try {
+    const result = await callFn('commentShare', { action: 'share', openid: OPENID, kind: 'video' });
+    if (result && result.success) {
+      showToast(result.pointsAdded > 0 ? '视频分享成功，+5 积分！📹' : (result.message || '分享成功'), 3000);
+      await refreshAllPoints();
+    } else {
+      showToast((result && result.error) || '操作失败', 3000);
+    }
+  } catch (e) { showToast('操作失败，请重试', 3000); }
 }
 
 // ==================== 工具 ====================
