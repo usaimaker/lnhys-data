@@ -8,6 +8,28 @@
   'use strict';
 
   var KEY = 'lnhy2026yangsheng';
+  // ---------- 集中积分后端（公众号 Worker + KV，$0，跨设备持久化）----------
+  var API_BASE = 'https://lnhys.sinovenus.de5.net';
+  function deviceUid() {
+    var u = '';
+    try { u = localStorage.getItem('lnhys_openid') || localStorage.getItem('lnhys_uuid') || ''; } catch (e) {}
+    if (!u) { u = 'u' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10); try { localStorage.setItem('lnhy_uid', u); } catch (e) {} }
+    return u;
+  }
+  function apiGetPoints() {
+    return fetch(API_BASE + '/api/points?uid=' + encodeURIComponent(deviceUid()), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { return (j && typeof j.total === 'number') ? j.total : null; })
+      .catch(function () { return null; });
+  }
+  function apiAddPoints(act) {
+    return fetch(API_BASE + '/api/points?uid=' + encodeURIComponent(deviceUid()), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ act: act })
+    }).then(function (r) { return r.json(); })
+      .then(function (j) { return (j && j.ok && typeof j.total === 'number') ? j.total : null; })
+      .catch(function () { return null; });
+  }
   var FREE_READ = true;   // 维护期免费阅读；云端恢复后此文件不再被调用
   var DATA_BASE = './data/';
   // 自用完整数据：URL 加 ?full（或 ?internal=1）可显示「内服≥5味」复杂方（默认对用户隐藏，仅保留简便廉验方法）
@@ -32,24 +54,6 @@
   function setPoints(v) { lsSet('lnhy_pts', Math.max(0, v)); return Math.max(0, v); }
   function unlockedSet() { return lsGet('lnhy_unlocked', {}); }
   function markUnlocked(id) { var u = unlockedSet(); u[id] = 1; lsSet('lnhy_unlocked', u); }
-
-  // 每日加分上限（评论 / 分享 各 3 次 / 天），localStorage 实现，离线生效
-  function todayStr() {
-    var d = new Date();
-    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
-  }
-  function dailyCount(type) {
-    var k = 'lnhy_daily_' + type;
-    var o = lsGet(k, null);
-    if (!o || o.date !== todayStr()) { o = { date: todayStr(), n: 0 }; lsSet(k, o); }
-    return o;
-  }
-  function bumpDaily(type) {
-    var o = dailyCount(type);
-    o.n = (o.n || 0) + 1;
-    lsSet('lnhy_daily_' + type, o);
-    return o.n;
-  }
 
   // ---------- 解码 ----------
   function deobf(b64) {
@@ -241,7 +245,10 @@
     var action = data.action;
 
     if (fnName === 'pointsManager') {
-      return Promise.resolve({ success: true, points: getPoints(), offline: true });
+      return apiGetPoints().then(function (pt) {
+        if (pt != null) { setPoints(pt); return { success: true, points: pt, offline: false }; }
+        return { success: true, points: getPoints(), offline: true };
+      });
     }
 
     if (fnName === 'queryMethods') {
@@ -325,33 +332,15 @@
         return Promise.resolve({ success: true, list: lsGet(key, []), offline: true });
       }
       if (action === 'comment') {
-        var dc = dailyCount('comment');
-        if (dc.n >= 3) {
-          var arr0 = lsGet(key, []);
-          arr0.unshift({ content: data.content, createTime: Date.now() });
-          lsSet(key, arr0.slice(0, 50));
-          return Promise.resolve({ success: true, message: '今日评论积分已达上限（3次），评论已保存', pointsAdded: 0, currentPoints: getPoints(), offline: true });
-        }
         var arr = lsGet(key, []);
         arr.unshift({ content: data.content, createTime: Date.now() });
         lsSet(key, arr.slice(0, 50));
-        bumpDaily('comment');
-        var np = setPoints(getPoints() + 5);
-        return Promise.resolve({
-          success: true, message: '评论已保存，+5 积分（每日上限3次）',
-          pointsAdded: 5, currentPoints: np, offline: true
-        });
-      }
-      if (action === 'share') {
-        var ds = dailyCount('share');
-        if (ds.n >= 3) {
-          return Promise.resolve({ success: true, message: '今日分享积分已达上限（3次）', pointsAdded: 0, currentPoints: getPoints(), offline: true });
-        }
-        bumpDaily('share');
-        var np2 = setPoints(getPoints() + 5);
-        return Promise.resolve({
-          success: true, message: '分享成功，+5 积分（每日上限3次）',
-          pointsAdded: 5, currentPoints: np2, offline: true
+        return apiAddPoints('comment').then(function (pt) {
+          var np = (pt != null) ? setPoints(pt) : setPoints(getPoints() + 5);
+          return {
+            success: true, message: pt != null ? '评论已保存，+5 积分（每日上限3次，跨设备同步）' : '评论已保存（离线记分）',
+            pointsAdded: (pt != null ? 5 : 5), currentPoints: np, offline: pt == null
+          };
         });
       }
       return Promise.resolve({ error: 'offline_unsupported', offline: true });
@@ -418,6 +407,8 @@
     findById: findById,
     banner: banner,
     getPoints: getPoints,
-    allItems: allItems
+    allItems: allItems,
+    apiGetPoints: apiGetPoints,
+    API_BASE: API_BASE
   };
 })(window);
