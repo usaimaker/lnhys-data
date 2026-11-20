@@ -446,56 +446,6 @@
       border: 1px solid #ccc; border-radius: 6px; padding: 4px 6px;
       font-size: 13px; text-align: center; width: 56px;
     }
-
-    /* ===== 移动端 H5 适配（手机单手好操作） ===== */
-    @media (max-width: 768px) {
-      body { font-size: 15px; }
-      .header { padding: 12px 14px; }
-      .header h1 { font-size: 17px; }
-      .header p { font-size: 11px; }
-
-      /* 搜索框：字号≥16px 防止 iOS 聚焦自动放大 */
-      .search-input-wrap { padding: 10px 14px; border-radius: 22px; }
-      .search-input-wrap input { font-size: 16px; }
-      .btn-search { padding: 8px 18px; font-size: 15px; }
-
-      /* 分类/标签：加大点击区域 */
-      .cat-bar { padding: 10px 14px 12px; }
-      .cat-chip { padding: 9px 16px; font-size: 14px; }
-      .tag-item { padding: 8px 14px; font-size: 14px; }
-      .home-tabs .tab { padding: 12px 0; font-size: 15px; }
-
-      /* 结果卡片 */
-      .method-list { padding: 0 12px 92px; }
-      .method-card { padding: 16px; margin-bottom: 12px; border-radius: 14px; }
-      .method-card .card-title { font-size: 16px; }
-      .method-card .card-summary { font-size: 14px; }
-      .result-header { padding: 12px 14px; }
-
-      /* 详情页 */
-      .detail-content { padding: 18px; margin: 12px 12px 84px; }
-      .detail-title { font-size: 19px; }
-      .detail-body { font-size: 16px; line-height: 1.85; }
-      #page-detail .comment-section,
-      #page-detail .share-section { margin-bottom: 88px; }
-
-      /* 回退按钮：更大更易点 */
-      .back-btn { padding: 8px 14px; font-size: 15px; margin-right: 6px; min-height: 36px; }
-
-      /* 通用按钮：满宽、易点 */
-      .btn { padding: 13px 22px; font-size: 15px; }
-      .bottom-bar {
-        padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
-        gap: 12px;
-      }
-      .bottom-bar .btn { flex: 1; }
-      .modal-btns { flex-direction: column; }
-      .modal-btns .btn { width: 100%; }
-      .modal-box {
-        padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
-      }
-      .toast { max-width: 80vw; }
-    }
   </style>
   <!-- 本地打包的 2.28.8 SDK（ESM 单文件，随页面托管，国内访问稳定，规避 1.x 的 ACCESS_TOKEN_DISABLED） -->
   <script type="module">
@@ -563,7 +513,7 @@
 <!-- 搜索结果页 -->
 <div id="page-list" class="page">
   <div class="header">
-    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <button class="back-btn" onclick="showPage('search')">← 返回</button>
     <span id="list-header-title">搜索结果</span>
   </div>
   
@@ -585,7 +535,7 @@
 <!-- 详情页 -->
 <div id="page-detail" class="page">
   <div class="header">
-    <button class="back-btn" onclick="goBack()">← 返回</button>
+    <button class="back-btn" onclick="goBackToList()">← 返回</button>
     <span>小方法详情</span>
   </div>
   
@@ -595,7 +545,7 @@
     <div style="color:#888;font-size:13px;margin-bottom:16px;">维护期全部免费开放，直接查看完整内容</div>
     <div style="color:#666;font-size:12px;margin-bottom:16px;">维护期内容全部免费，无需积分</div>
     <button class="btn btn-orange btn-full" onclick="unlockMethod()">免费查看完整内容</button>
-    <button class="btn btn-gray btn-full" style="margin-top:8px;" onclick="goBack()">先不看了</button>
+    <button class="btn btn-gray btn-full" style="margin-top:8px;" onclick="goBackToList()">先不看了</button>
   </div>
   
   <div id="detail-content" style="display:none;">
@@ -640,6 +590,17 @@
       </div>
     </div>
     
+    <!-- 赞赏支持区 -->
+    <div class="reward-section fade-in" style="margin:12px;background:white;border-radius:12px;padding:18px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.06);text-align:center;">
+      <div class="section-title" style="justify-content:center;">☕ 赞赏支持</div>
+      <div class="share-hint" style="text-align:center;margin-bottom:14px;">这些方法若帮到了你，欢迎请作者喝杯茶</div>
+      <div id="reward-qr-box">
+        <img src="./reward-qr.png?v=20261120" alt="微信收款码" style="width:210px;max-width:70%;height:auto;border-radius:8px;cursor:zoom-in;box-shadow:0 2px 10px rgba(0,0,0,0.08);" onclick="window.open(this.src,'_blank')">
+        <div style="color:#999;font-size:12px;margin-top:10px;">点击图片可放大 · 长按识别微信收款码</div>
+      </div>
+      <div style="color:#aaa;font-size:12px;margin-top:12px;">赞赏完全自愿，不影响任何功能使用</div>
+    </div>
+
     <div style="height: 80px;"></div>
   </div>
 </div>
@@ -722,30 +683,10 @@ function showToast(msg, duration = 2000) {
   setTimeout(() => toast.classList.remove('show'), duration);
 }
 
-let currentPageId = 'search';
-function showPage(pageId, push) {
-  if (push === undefined) push = true;
+function showPage(pageId) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + pageId).classList.add('active');
   window.scrollTo(0, 0);
-  // 用 History API 记录页面栈：search(根) → list → detail，
-  // 手机「退回键」触发 popstate 即可逐级返回，不必依赖页面内返回按钮。
-  if (push && pageId !== 'search' && pageId !== 'home' && pageId !== currentPageId) {
-    history.pushState({ page: pageId }, '', '#' + pageId);
-  }
-  currentPageId = pageId;
-}
-
-// 手机硬件退回键：根据历史栈逐级返回上一页
-window.addEventListener('popstate', function(e) {
-  const p = (e.state && e.state.page) ? e.state.page : 'search';
-  showPage(p, false);
-});
-
-// 页面内「返回」按钮：统一走浏览器历史栈，与硬件退回键行为一致
-function goBack() {
-  if (history.length > 1) history.back();
-  else showPage('search', false);
 }
 
 function closeModal() {
@@ -1164,7 +1105,7 @@ async function confirmUnlock() {
 }
 
 function goBackToList() {
-  goBack();
+  showPage(fromPage === 'search' ? 'list' : 'search');
 }
 
 // ==================== 评论 ====================
@@ -1214,7 +1155,9 @@ async function submitComment() {
       showToast(result.message || '评论发布成功！');
       document.getElementById('comment-input').value = '';
       loadComments(currentMethodId);
-      refreshAllPoints();
+      if (result.pointsAdded > 0) {
+        document.getElementById('list-points').textContent = result.currentPoints + ' 分';
+      }
     } else {
       showToast(result.error || '评论发布失败');
     }
@@ -1224,35 +1167,12 @@ async function submitComment() {
 }
 
 // ==================== 分享 ====================
-// 统一刷新首页与列表两处积分显示
-async function refreshAllPoints() {
-  const p = await loadPoints('list-points');
-  const el = document.getElementById('home-points');
-  if (el && p != null) el.textContent = p + ' 分';
+function shareVoice() {
+  showToast('请在公众号对话框中发送语音消息即可获得积分 🎙️', 3000);
 }
 
-async function shareVoice() {
-  try {
-    const result = await callFn('commentShare', { action: 'share', openid: OPENID, kind: 'voice' });
-    if (result && result.success) {
-      showToast(result.pointsAdded > 0 ? '语音分享成功，+5 积分！🎙️' : (result.message || '分享成功'), 3000);
-      await refreshAllPoints();
-    } else {
-      showToast((result && result.error) || '操作失败', 3000);
-    }
-  } catch (e) { showToast('操作失败，请重试', 3000); }
-}
-
-async function shareVideo() {
-  try {
-    const result = await callFn('commentShare', { action: 'share', openid: OPENID, kind: 'video' });
-    if (result && result.success) {
-      showToast(result.pointsAdded > 0 ? '视频分享成功，+5 积分！📹' : (result.message || '分享成功'), 3000);
-      await refreshAllPoints();
-    } else {
-      showToast((result && result.error) || '操作失败', 3000);
-    }
-  } catch (e) { showToast('操作失败，请重试', 3000); }
+function shareVideo() {
+  showToast('请在公众号对话框中发送视频消息即可获得积分 📹', 3000);
 }
 
 // ==================== 工具 ====================
@@ -1280,10 +1200,10 @@ async function initRoute() {
   if (hash.includes('/list') && kw) {
     currentKeyword = kw;
     document.getElementById('search-input').value = kw;
-    showPage('search', false);
+    showPage('search');
     doSearch();
   } else {
-    showPage('search', false);
+    showPage('search');
     loadPoints('home-points');
     loadHotMethods();
   }
