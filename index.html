@@ -469,6 +469,7 @@
   <div class="points-bar">
     <span class="points-label">💰 当前积分</span>
     <span class="points-num" id="home-points">加载中...</span>
+    <span id="home-level" style="margin-left:10px;background:linear-gradient(135deg,#f5a623,#f76b1c);color:#fff;font-size:12px;padding:2px 10px;border-radius:12px;">普通会员</span>
   </div>
   
   <div class="search-box">
@@ -590,15 +591,28 @@
       </div>
     </div>
     
-    <!-- 赞赏支持区 -->
+    <!-- 会员积分专区（付款买积分：扫码付款 -> 联系作者领取兑换码 -> 此处兑换） -->
     <div class="reward-section fade-in" style="margin:12px;background:white;border-radius:12px;padding:18px 16px;box-shadow:0 1px 6px rgba(0,0,0,0.06);text-align:center;">
-      <div class="section-title" style="justify-content:center;">☕ 赞赏支持</div>
-      <div class="share-hint" style="text-align:center;margin-bottom:14px;">这些方法若帮到了你，欢迎请作者喝杯茶</div>
-      <div id="reward-qr-box">
-        <img src="./reward-qr.png?v=20261120" alt="微信收款码" style="width:210px;max-width:70%;height:auto;border-radius:8px;cursor:zoom-in;box-shadow:0 2px 10px rgba(0,0,0,0.08);" onclick="window.open(this.src,'_blank')">
-        <div style="color:#999;font-size:12px;margin-top:10px;">点击图片可放大 · 长按识别微信收款码</div>
+      <div class="section-title" style="justify-content:center;">👑 会员积分专区</div>
+      <div class="share-hint" style="text-align:center;margin-bottom:12px;">扫码付款后，把付款截图发给公众号作者，领取兑换码，在下方兑换积分、升级会员</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="background:linear-gradient(135deg,#e8d5a8,#c9a24b);color:#5a3c00;border-radius:10px;padding:8px 12px;font-size:12px;min-width:88px;"><b>🥈 银卡</b><br>100 积分</div>
+        <div style="background:linear-gradient(135deg,#e0e4ea,#a8b3c4);color:#33405a;border-radius:10px;padding:8px 12px;font-size:12px;min-width:88px;"><b>🥇 金卡</b><br>500 积分</div>
+        <div style="background:linear-gradient(135deg,#c9a0ff,#7b4fd6);color:#fff;border-radius:10px;padding:8px 12px;font-size:12px;min-width:88px;"><b>💎 钻石</b><br>2000 积分</div>
       </div>
-      <div style="color:#aaa;font-size:12px;margin-top:12px;">赞赏完全自愿，不影响任何功能使用</div>
+      <div id="reward-qr-box">
+        <img src="./reward-qr.png?v=20261120" alt="微信收款码" style="width:190px;max-width:64%;height:auto;border-radius:8px;cursor:zoom-in;box-shadow:0 2px 10px rgba(0,0,0,0.08);" onclick="window.open(this.src,'_blank')">
+        <div style="color:#999;font-size:12px;margin-top:8px;">点击放大 · 长按识别微信收款码付款</div>
+      </div>
+      <div style="margin-top:16px;border-top:1px dashed #eee;padding-top:14px;">
+        <div style="font-size:13px;color:#555;margin-bottom:8px;">🎟️ 已有兑换码？在这里兑换</div>
+        <div style="display:flex;gap:6px;max-width:320px;margin:0 auto;">
+          <input id="redeem-code" type="text" placeholder="LNHY-XXXX-XXXX" style="flex:1;min-width:0;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:14px;text-transform:uppercase;" maxlength="16">
+          <button onclick="doRedeem()" style="background:linear-gradient(135deg,#f5a623,#f76b1c);color:#fff;border:none;border-radius:8px;padding:0 18px;font-size:14px;font-weight:bold;cursor:pointer;">兑换</button>
+        </div>
+        <div id="redeem-msg" style="font-size:12px;color:#888;margin-top:8px;min-height:16px;"></div>
+      </div>
+      <div style="color:#aaa;font-size:11px;margin-top:12px;">积分累积升级：100 银卡 / 500 金卡 / 2000 钻石 · 会员专属权益陆续开放</div>
     </div>
 
     <div style="height: 80px;"></div>
@@ -1216,6 +1230,59 @@ document.getElementById('search-input').addEventListener('keydown', function(e) 
 
 // 初始化
 initRoute();
+</script>
+
+<script>
+// ===== 会员积分兑换（付款 -> 作者发兑换码 -> 此处兑换到账） =====
+const VIP_API = (window.LNHY_STATIC && window.LNHY_STATIC.API_BASE) || 'https://lnhys.sinovenus.de5.net';
+function vipUid(){
+  let u='';
+  try{ u=localStorage.getItem('lnhys_openid')||localStorage.getItem('lnhys_uuid')||''; }catch(e){}
+  if(!u){ u='u_'+Math.random().toString(36).slice(2)+Date.now().toString(36); try{localStorage.setItem('lnhys_openid',u);}catch(e){} }
+  return u;
+}
+function levelOf(t){
+  t=Number(t)||0;
+  if(t>=2000) return '💎 钻石会员';
+  if(t>=500) return '🥇 金卡会员';
+  if(t>=100) return '🥈 银卡会员';
+  return '普通会员';
+}
+async function refreshLevel(){
+  const el=document.getElementById('home-level'); if(!el) return;
+  try{
+    const r=await fetch(VIP_API+'/api/redeem?uid='+encodeURIComponent(vipUid()),{cache:'no-store'});
+    const j=await r.json();
+    if(j&&typeof j.total==='number') el.textContent=levelOf(j.total);
+  }catch(e){}
+}
+async function doRedeem(){
+  const inp=document.getElementById('redeem-code');
+  const msg=document.getElementById('redeem-msg');
+  const code=(inp.value||'').trim().toUpperCase();
+  if(!/^LNHY-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)){
+    msg.style.color='#c33'; msg.textContent='兑换码格式应为 LNHY-XXXX-XXXX'; return;
+  }
+  msg.style.color='#888'; msg.textContent='兑换中…';
+  try{
+    const r=await fetch(VIP_API+'/api/redeem?uid='+encodeURIComponent(vipUid()),{
+      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:code})
+    });
+    const j=await r.json();
+    if(j.ok){
+      msg.style.color='#2a8'; msg.textContent='✅ 到账 '+j.added+' 积分！当前 '+j.total+' 积分（'+j.level+'）';
+      inp.value='';
+      if(typeof loadPoints==='function') loadPoints('home-points');
+      refreshLevel();
+      if(typeof showToast==='function') showToast('兑换成功，+'+j.added+' 积分',2600);
+    }else{
+      const why={used:'该码已被使用',invalid:'兑换码不存在',no_uid:'身份异常请刷新重试','bad code':'码格式不对'}[j.reason]||('兑换失败：'+(j.reason||'未知'));
+      msg.style.color='#c33'; msg.textContent='❌ '+why;
+    }
+  }catch(e){ msg.style.color='#c33'; msg.textContent='网络异常，请稍后重试'; }
+}
+// 页面加载后刷新等级
+setTimeout(refreshLevel,1200);
 </script>
 </body>
 </html>
